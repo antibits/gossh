@@ -64,7 +64,7 @@ func setSshConsoleTitle(ctx context.Context, title string) {
 			case <-tick.C:
 				utils.SetConsoleTitle(title)
 			case <-ctx.Done():
-				break
+				return
 			}
 		}
 	}()
