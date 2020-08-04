@@ -29,6 +29,20 @@ func (cmd *NewhostCmd) Name() string {
 
 func (cmd *NewhostCmd) Exec() error {
 	count := 0
+	CmdPrintOut(cmd.Name(), "host:")
+_resethost:
+	if count >= ALLOW_FORMAT_ERR_LIMIT {
+		return nil
+	}
+	host := ""
+	fmt.Scanln(&host)
+	if len(host) == 0 || !HOST_PATTERN.MatchString(host) {
+		count++
+		CmdPrintOut(cmd.Name(), &InputFormatNotSupport{ALLOW_FORMAT_ERR_LIMIT, count})
+		goto _resethost
+	}
+
+	count = 0
 	CmdPrintOut(cmd.Name(), "user(wps):")
 _resetuser:
 	if count >= ALLOW_FORMAT_ERR_LIMIT {
@@ -45,26 +59,12 @@ _resetuser:
 		goto _resetuser
 	}
 
-	count = 0
-	CmdPrintOut(cmd.Name(), "host:")
-_resethost:
-	if count >= ALLOW_FORMAT_ERR_LIMIT {
-		return nil
-	}
-	host := ""
-	fmt.Scanln(&host)
-	if len(host) == 0 || !HOST_PATTERN.MatchString(host) {
-		count++
-		CmdPrintOut(cmd.Name(), &InputFormatNotSupport{ALLOW_FORMAT_ERR_LIMIT, count})
-		goto _resethost
-	}
-
-	CmdPrintOut(cmd.Name(), "timeout(3):")
 	timeout := 0
+	CmdPrintOut(cmd.Name(), "timeout(3):")
 	fmt.Scanln(&timeout)
 	model.Config.NewHost(user, host, timeout)
 	// added success connect to host immidiately
-	sshCmds, _ := SubcmdMgr.Search(host)
+	sshCmds, _ := SubcmdMgr.Search(host + ";")
 	if len(sshCmds) == 1 {
 		return sshCmds[0].Exec()
 	}
