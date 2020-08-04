@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"strings"
 )
 
@@ -37,12 +38,28 @@ func (*HostNotFound) Error() string {
 func (cfg *Conf) GetHost(keyword string) ([]Host, error) {
 	mHosts := make([]Host, 0)
 	for _, host := range cfg.Hosts {
-		if strings.Contains(host.Host, keyword) {
+		if strings.HasSuffix(keyword, ";") {
+			if strings.HasSuffix(host.Host, keyword[:len(keyword)-1]) {
+				mHosts = append(mHosts, *host)
+			}
+		} else if strings.Contains(host.Host, keyword) {
 			mHosts = append(mHosts, *host)
 		}
 	}
 	if len(mHosts) == 0 {
 		return nil, &HostNotFound{}
+	}
+	if len(mHosts) > 1 && strings.HasSuffix(keyword, ";") {
+		_mHosts := make([]Host, 0)
+		for _, host := range mHosts {
+			if host.Host == keyword[:len(keyword)-1] {
+				_mHosts = append(_mHosts, host)
+				break
+			}
+		}
+		if len(_mHosts) > 0 {
+			mHosts = _mHosts
+		}
 	}
 	return mHosts, nil
 }
@@ -119,4 +136,13 @@ var Config = &Conf{}
 func init() {
 	fmt.Println("loading configurations...")
 	Config.Load()
+
+	go func() {
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Kill, os.Interrupt)
+		select {
+		case <-c:
+			Config.Save()
+		}
+	}()
 }
