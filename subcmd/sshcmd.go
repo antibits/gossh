@@ -80,11 +80,16 @@ func ssh(user, host string, timeoutSec int) {
 		timeoutSec = 3
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	cmd := exec.CommandContext(ctx, "ssh", "-i", "~/.ssh/ssh", "-o", fmt.Sprintf("ConnectTimeout=%d", timeoutSec), url)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr	
+	cmd.Stderr = os.Stderr
 	setSshConsoleTitle(ctx, url)
-	cmd.Run()
-	cancel()
+	err := cmd.Run()
+	if err != nil {
+		CmdPrintOut("", fmt.Sprintf("cmd run with some err.!, %v", err))
+		time.Sleep(3 * time.Second)
+		os.Exit(-1)
+	}
 }
